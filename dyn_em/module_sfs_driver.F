@@ -66,7 +66,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                        tgrmij_drm, n_tgrmij_drm, &   ! XS
                        evc_drm, n_evc_drm,       &   ! XS
                        moist, n_moist,           &   ! XS
-                       scalar, n_scalar, bn2)    &   ! XS
+                       scalar, n_scalar, bn2)        ! XS
 
 !-----------------------------------------------------------------------------
 !
