@@ -33,7 +33,7 @@
 !
 !=============================================================================
 !
-! Modification History: 
+! Modification History:
 !
 ! Implemented 12/2009 by Jeff Mirocha, jmirocha@llnl.gov
 !
@@ -46,7 +46,7 @@ CONTAINS
 !=============================================================================
 
 SUBROUTINE sfs_driver( grid, config_flags, &
-                       nba_mij, n_nba_mij, & 
+                       nba_mij, n_nba_mij, &
                        nba_rij, n_nba_rij, &
                        rsfs_rec, n_rsfs_rec,     &   ! XS
                        rsfs_filt, n_rsfs_filt,   &   ! XS
@@ -97,7 +97,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                            HALO_EM_NBA_RIJ_sub   &
                           ,PERIOD_EM_NBA_RIJ_sub   &
                           ,HALO_EM_NBA_MIJ_sub   &
-                          ,PERIOD_EM_NBA_MIJ_sub &  
+                          ,PERIOD_EM_NBA_MIJ_sub &
                           ,HALO_EM_RSFS_REC_sub  &    !---------- XS ---------
                           ,PERIOD_EM_RSFS_REC_sub  &
                           ,HALO_EM_RSFS_FILT_sub  &
@@ -226,7 +226,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
   REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33) &
   :: temp, qvapor
   ! qvapor below is a dummy for all moist variables. It is just for historical reason
-  ! we call it qvapor. XS 
+  ! we call it qvapor. XS
 
   INTEGER :: k_start , k_end, its, ite, jts, jte
   INTEGER :: ids , ide , jds , jde , kds , kde , &
@@ -237,8 +237,8 @@ SUBROUTINE sfs_driver( grid, config_flags, &
              ipsx, ipex, jpsx, jpex, kpsx, kpex, &
              imsy, imey, jmsy, jmey, kmsy, kmey, &
              ipsy, ipey, jpsy, jpey, kpsy, kpey
- 
-  INTEGER :: ij, i, j, k, nq 
+
+  INTEGER :: ij, i, j, k, nq
 
   ! RSFS variables-----------------------------------
   INTEGER :: recn
@@ -276,13 +276,13 @@ SUBROUTINE sfs_driver( grid, config_flags, &
 !                                BEGIN NBA
 !
 !=======================================================================
-      
+
 !  IF ( grid%itimestep .EQ. 1 ) THEN
-!         
+!
 !    IF ( (config_flags%sfs_opt .EQ. 2) .AND. (config_flags%km_opt .NE. 2)) THEN
-!  
+!
 !    CALL wrf_error_fatal( 'Must use km_opt=2 with sfs_opt=2' )
-!    
+!
 !    ENDIF
 !
 !  ENDIF
@@ -295,7 +295,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
 
     !$OMP PARALLEL DO   &
     !$OMP PRIVATE ( ij )
-    DO ij = 1 , grid%num_tiles !---------------------------------------- 
+    DO ij = 1 , grid%num_tiles !----------------------------------------
 
         CALL calc_mij_constants( )
 
@@ -309,7 +309,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
 
     !$OMP PARALLEL DO   &
     !$OMP PRIVATE ( ij )
-    DO ij = 1 , grid%num_tiles !---------------------------------------- 
+    DO ij = 1 , grid%num_tiles !----------------------------------------
 
         CALL calc_smnsmn( nba_rij(ims,kms,jms,P_smnsmn),    &
                           grid%defor11, grid%defor22,       &
@@ -399,7 +399,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                      nba_rij(ims,kms,jms,P_r13),       &
                      nba_rij(ims,kms,jms,P_r23),       &
                      nba_rij(ims,kms,jms,P_smnsmn),    &
-                     grid%tke_2,                       & 
+                     grid%tke_2,                       &
                      grid%rdzw, grid%dx, grid%dy,      &
                      config_flags,                     &
                      ids, ide, jds, jde, kds, kde,     &
@@ -429,7 +429,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                      nba_rij(ims,kms,jms,P_r13),       &
                      nba_rij(ims,kms,jms,P_r23),       &
                      nba_rij(ims,kms,jms,P_smnsmn),    &
-                     grid%tke_2,                       & 
+                     grid%tke_2,                       &
                      grid%rdzw, grid%dx, grid%dy,      &
                      config_flags,                     &
                      ids, ide, jds, jde, kds, kde,     &
@@ -459,7 +459,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                      nba_rij(ims,kms,jms,P_r13),       &
                      nba_rij(ims,kms,jms,P_r23),       &
                      nba_rij(ims,kms,jms,P_smnsmn),    &
-                     grid%tke_2,                       & 
+                     grid%tke_2,                       &
                      grid%rdzw, grid%dx, grid%dy,      &
                      grid%fnm, grid%fnp,               &
                      config_flags,                     &
@@ -489,7 +489,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                      nba_rij(ims,kms,jms,P_r13),       &
                      nba_rij(ims,kms,jms,P_r23),       &
                      nba_rij(ims,kms,jms,P_smnsmn),    &
-                     grid%tke_2,                       & 
+                     grid%tke_2,                       &
                      grid%rdzw, grid%dx, grid%dy,      &
                      grid%fnm, grid%fnp,               &
                      config_flags,                     &
@@ -524,7 +524,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                               grid%i_start(ij), grid%i_end(ij), &
                               grid%j_start(ij), grid%j_end(ij), &
                               k_start    , k_end                )
-      
+
       CALL set_physical_bc3d( nba_mij(ims,kms,jms,P_m22), 'p',    &
                               config_flags,                     &
                               ids, ide, jds, jde, kds, kde,     &
@@ -533,7 +533,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
                               grid%i_start(ij), grid%i_end(ij), &
                               grid%j_start(ij), grid%j_end(ij), &
                               k_start    , k_end                )
-      
+
       CALL set_physical_bc3d( nba_mij(ims,kms,jms,P_m33), 'p',    &
                               config_flags,                     &
                               ids, ide, jds, jde, kds, kde,     &
@@ -583,7 +583,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
 
 
 
-IF ( config_flags%rsfs_opt.lt.6 .and config_flags%rsfs_opt.ge.0 ) THEN
+IF ( config_flags%rsfs_opt.lt.6 .and. config_flags%rsfs_opt.ge.0 ) THEN
 
 !=======================================================================
 !
