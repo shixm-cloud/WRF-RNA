@@ -583,18 +583,7 @@ SUBROUTINE sfs_driver( grid, config_flags, &
 
 
 
-    !$OMP END PARALLEL DO
-
-!=======================================================================
-!
-!                                END NBA
-!
-!=======================================================================
-
-ENDIF !(config_flags%sfs_opt .EQ. 1) .OR. (config_flags%sfs_opt .EQ. 2)
-
-
-IF ( config_flags%rsfs_opt .LT. 6 ) THEN
+IF ( config_flags%rsfs_opt.lt.6 .and config_flags%rsfs_opt.ge.0 ) THEN
 
 !=======================================================================
 !

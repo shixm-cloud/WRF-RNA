@@ -1005,7 +1005,6 @@ BENCH_START(vert_diff_tim)
                                       grid%tke_2, th_phy, config_flags,              &
                                       grid%defor13,grid%defor23,grid%defor33,                   &
                                       nba_mij, num_nba_mij,          & !JDM
-                                      nba_mij, num_nba_mij,          & !JDM
                                       rsfs_rmij, n_rsfs_rmij,        &   !XS
                                       rsfs_qmij, n_rsfs_qmij,        &   !XS
                                       rsfs_qsij, n_rsfs_qsij,        &   !XS
