@@ -24,6 +24,23 @@ CONTAINS
                              , dz8w , p8w , t8w                 &
                              , nba_mij, n_nba_mij               & !JDM
                              , nba_rij, n_nba_rij               & !JDM
+                             , rsfs_rec, n_rsfs_rec             &   ! XS
+                             , rsfs_filt, n_rsfs_filt           &   ! XS
+                             , rsfs_prec, n_rsfs_prec           &   ! XS
+                             , rsfs_rmij, n_rsfs_rmij           &   ! XS
+                             , rsfs_qmij, n_rsfs_qmij           &   ! XS
+                             , rsfs_qsij, n_rsfs_qsij           &   ! XS
+                             , tfu_drm, n_tfu_drm               &   ! XS
+                             , uc_drm, n_uc_drm                 &   ! XS
+                             , tfuc_drm, n_tfuc_drm             &   ! XS
+                             , sijc_drm, n_sijc_drm             &   ! XS
+                             , tfsij_drm, n_tfsij_drm           &   ! XS
+                             , tfsijc_drm, n_tfsijc_drm         &   ! XS
+                             , hij_drm, n_hij_drm               &   ! XS
+                             , hijc_drm, n_hijc_drm             &   ! XS
+                             , tfrmij_drm, n_tfrmij_drm         &   ! XS
+                             , tgrmij_drm, n_tgrmij_drm         &   ! XS
+                             , evc_drm, n_evc_drm               &   ! XS                             
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
                              , ips, ipe, jps, jpe, kps, kpe     &
@@ -118,12 +135,54 @@ CONTAINS
 
 !JDM
   INTEGER, INTENT(  IN ) :: n_nba_mij, n_nba_rij
+! XS
+  INTEGER, INTENT(  IN ) :: n_rsfs_rec, n_rsfs_filt, n_rsfs_prec, n_rsfs_rmij, &
+              n_rsfs_qmij, n_rsfs_qsij,        &
+              n_tfu_drm, n_uc_drm, n_tfuc_drm, &
+              n_sijc_drm, n_tfsij_drm, n_tfsijc_drm, n_hij_drm, n_hijc_drm, &
+              n_tfrmij_drm, n_tgrmij_drm, n_evc_drm  
 
   REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_nba_mij) &
   :: nba_mij
 
   REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_nba_rij) &
   :: nba_rij
+
+! XS
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_rec) &
+    :: rsfs_rec
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_filt) &
+    :: rsfs_filt
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_prec) &
+    :: rsfs_prec
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_rmij) &
+    :: rsfs_rmij
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_qmij) &
+    :: rsfs_qmij
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_rsfs_qsij) &
+    :: rsfs_qsij
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tfu_drm) &
+    :: tfu_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_uc_drm) &
+    :: uc_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tfuc_drm) &
+    :: tfuc_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_sijc_drm) &
+    :: sijc_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tfsij_drm) &
+    :: tfsij_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tfsijc_drm) &
+    :: tfsijc_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_hij_drm) &
+    :: hij_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_hijc_drm) &
+    :: hijc_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tfrmij_drm) &
+    :: tfrmij_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_tgrmij_drm) &
+    :: tgrmij_drm
+  REAL ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,n_evc_drm) &
+    :: evc_drm
 
 ! Local
 
@@ -568,12 +627,36 @@ BENCH_START(phy_bc_tim)
        !$OMP END PARALLEL DO
 BENCH_END(phy_bc_tim)
 
-!JDM
-IF ( ( config_flags%sfs_opt .GT. 0 ) .AND. ( config_flags%diff_opt .eq. 2 ) ) THEN
 
- CALL sfs_driver( grid, config_flags,     &
-                  nba_mij, n_nba_mij,     & 
-                  nba_rij, n_nba_rij      ) 
+! XS 
+IF (       ( ( config_flags%sfs_opt .GT. 0 )    &
+        .OR. ( config_flags%rsfs_opt .LT. 6 .and. config_flags%rsfs_opt .GE.0 )    & 
+        .OR. ( config_flags%dwl_opt .GT. 0 )  ) & 
+        .AND.( config_flags%diff_opt .EQ. 2 ) ) THEN
+     
+      CALL sfs_driver( grid, config_flags,     &
+                       nba_mij, n_nba_mij,     &
+                       nba_rij, n_nba_rij,     &
+                       rsfs_rec, n_rsfs_rec,                 &
+                       rsfs_filt, n_rsfs_filt,               &
+                       rsfs_prec, n_rsfs_prec,               &
+                       rsfs_rmij, n_rsfs_rmij,               &
+                       rsfs_qmij, n_rsfs_qmij,               &
+                       rsfs_qsij, n_rsfs_qsij,               &
+                       tfu_drm, n_tfu_drm,                   &
+                       uc_drm, n_uc_drm,                     &
+                       tfuc_drm, n_tfuc_drm,                 &
+                       sijc_drm, n_sijc_drm,                 &
+                       tfsij_drm, n_tfsij_drm,               &
+                       tfsijc_drm, n_tfsijc_drm,             &
+                       hij_drm, n_hij_drm,                   &
+                       hijc_drm, n_hijc_drm,                 &
+                       tfrmij_drm, n_tfrmij_drm,             &
+                       tgrmij_drm, n_tgrmij_drm,             &
+                       evc_drm, n_evc_drm,                   &
+                       moist, num_moist,                     &
+                       scalar, num_scalar,                    &
+                       grid%bn2)                  
 
 ENDIF
 
@@ -758,13 +841,13 @@ BENCH_END(update_phy_ten_tim)
        ! do rayleigh (and zonal-average newtonian) damping during
        ! first iteration of RK loop only
 
-=============================================================
-INTENTIONALLY PLACED HERE TO BREAK COMPILE
-1. The DAMPTOP routine needs to have 1d column arrays c1 and c2
-to correctly use the column pressures mut, muu, and muv.
-2. The DAMPTOP routine needs to have the grid%t_2 evaluated
-to see if perturbation of moist potential temperature is OK.
-=============================================================
+! =============================================================
+! INTENTIONALLY PLACED HERE TO BREAK COMPILE
+! 1. The DAMPTOP routine needs to have 1d column arrays c1 and c2
+! to correctly use the column pressures mut, muu, and muv.
+! 2. The DAMPTOP routine needs to have the grid%t_2 evaluated
+! to see if perturbation of moist potential temperature is OK.
+! =============================================================
 
        IF ( (config_flags%damp_opt == 101) .OR. &
             (config_flags%damp_opt == 103)      ) THEN
@@ -922,6 +1005,10 @@ BENCH_START(vert_diff_tim)
                                       grid%tke_2, th_phy, config_flags,              &
                                       grid%defor13,grid%defor23,grid%defor33,                   &
                                       nba_mij, num_nba_mij,          & !JDM
+                                      nba_mij, num_nba_mij,          & !JDM
+                                      rsfs_rmij, n_rsfs_rmij,        &   !XS
+                                      rsfs_qmij, n_rsfs_qmij,        &   !XS
+                                      rsfs_qsij, n_rsfs_qsij,        &   !XS
                                       grid%div, moist, chem, scalar,tracer,         &
                                       grid%xkmv, grid%xkhv, grid%xkmh, config_flags%km_opt,       & ! xkmh added Oct2013
                                       grid%fnm, grid%fnp, grid%dn, grid%dnw, grid%rdz, grid%rdzw, &
@@ -955,6 +1042,9 @@ BENCH_START(hor_diff_tim)
                                       grid%defor11, grid%defor22, grid%defor12,             &
                                       grid%defor13, grid%defor23,   &
                                       nba_mij, num_nba_mij,         & !JDM
+                                      rsfs_rmij, n_rsfs_rmij,       &  ! XS
+                                      rsfs_qmij, n_rsfs_qmij,       &  ! XS
+                                      rsfs_qsij, n_rsfs_qsij,       &  ! XS                                      
                                       grid%div,                     &
                                       moist, chem, scalar,tracer,               &
                                       grid%msfux,grid%msfuy, grid%msfvx,grid%msfvy, grid%msftx,  &

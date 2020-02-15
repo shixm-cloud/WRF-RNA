@@ -780,6 +780,23 @@ BENCH_START(calc_p_rho_tim)
                              , dz8w , p8w , t8w                 &
                              , nba_mij, num_nba_mij             & !JDM 
                              , nba_rij, num_nba_rij             & !JDM  
+                             , rsfs_rec, num_rsfs_rec           &   ! XS 
+                             , rsfs_filt, num_rsfs_filt         &   ! XS 
+                             , rsfs_prec, num_rsfs_prec         &   ! XS 
+                             , rsfs_rmij, num_rsfs_rmij         &   ! XS 
+                             , rsfs_qmij, num_rsfs_qmij         &   ! XS 
+                             , rsfs_qsij, num_rsfs_qsij         &   ! XS 
+                             , tfu_drm, num_tfu_drm             &   ! XS 
+                             , uc_drm, num_uc_drm               &   ! XS 
+                             , tfuc_drm, num_tfuc_drm           &   ! XS 
+                             , sijc_drm, num_sijc_drm           &   ! XS 
+                             , tfsij_drm, num_tfsij_drm         &   ! XS 
+                             , tfsijc_drm, num_tfsijc_drm       &   ! XS 
+                             , hij_drm, num_hij_drm             &   ! XS 
+                             , hijc_drm, num_hijc_drm           &   ! XS 
+                             , tfrmij_drm, num_tfrmij_drm       &   ! XS 
+                             , tgrmij_drm, num_tgrmij_drm       &   ! XS 
+                             , evc_drm, num_evc_drm             &   ! XS  
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
                              , ips, ipe, jps, jpe, kps, kpe     &
