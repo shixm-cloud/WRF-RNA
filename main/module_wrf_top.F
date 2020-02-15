@@ -2245,6 +2245,18 @@ ENDIF
       END IF
 ! #endif
 
+! XS assign number of RSFS variables according to the choice of microphysics
+! #if (EM_CORE == 1)
+      DO i = 1, model_config_rec % max_dom
+         IF ( (model_config_rec%rsfs_opt(i) .lt. 0) .or. (model_config_rec%rsfs_opt(i) .gt. 5) ) THEN
+            model_config_rec % mp_physics_rsfs(i) = -1
+         ELSE
+            model_config_rec % mp_physics_rsfs(i) = model_config_rec % mp_physics(i)
+         END IF
+       END DO
+ ! #endif
+
+
 #if (EM_CORE == 1)
       IF ( model_config_rec % dfi_opt .EQ. DFI_NODFI ) THEN
         DO i = 1, model_config_rec % max_dom
