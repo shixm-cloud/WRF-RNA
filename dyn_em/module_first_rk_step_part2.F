@@ -1043,7 +1043,8 @@ BENCH_START(hor_diff_tim)
                                       nba_mij, num_nba_mij,         & !JDM
                                       rsfs_rmij, n_rsfs_rmij,       &  ! XS
                                       rsfs_qmij, n_rsfs_qmij,       &  ! XS
-                                      rsfs_qsij, n_rsfs_qsij,       &  ! XS                                      
+                                      rsfs_qsij, n_rsfs_qsij,       &  ! XS  
+                                      grid%u_2,grid%v_2,grid%w_2,   &  ! YW                  
                                       grid%div,                     &
                                       moist, chem, scalar,tracer,               &
                                       grid%msfux,grid%msfuy, grid%msfvx,grid%msfvy, grid%msftx,  &

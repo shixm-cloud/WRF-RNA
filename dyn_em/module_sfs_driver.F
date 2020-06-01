@@ -2738,7 +2738,7 @@ IF ( n_moist .ge. PARAM_FIRST_SCALAR ) THEN
             !$OMP PRIVATE ( ij )
             DO ij = 1 , grid%num_tiles !------------------------------------
 
-              if (nq.eq.1) then
+              if (nq.le.2) then
                CALL qmoist_s(  grid%qss,                                        &
                     qvapor,                                       &
                     grid%ht, grid%rdx, grid%rdy,                    &
@@ -3008,7 +3008,7 @@ IF ( n_moist .ge. PARAM_FIRST_SCALAR ) THEN
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij )
       DO ij = 1 , grid%num_tiles !--------------------------------
-        if (nq.eq.1) then
+        if (nq.le.2) then
         CALL qmoist_s(  grid%qss,                                        &
                    qvapor,                                       &
                    grid%ht, grid%rdx, grid%rdy,                    &

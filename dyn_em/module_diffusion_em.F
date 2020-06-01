@@ -2290,6 +2290,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                     rsfs_rmij, n_rsfs_rmij,                    &  ! XS
                                     rsfs_qmij, n_rsfs_qmij,                    &  ! XS
                                     rsfs_qsij, n_rsfs_qsij,                    &  ! XS
+                                    u_2, v_2, w_2,                             &  ! YW
                                     div,                                       &
                                     moist, chem, scalar,tracer,                &
                                     msfux, msfuy, msfvx, msfvy,                &
@@ -2372,7 +2373,8 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                                                      tke, &
                                                                      rdz, &
                                                                     rdzw, &
-                                                                     rho
+                                                                     rho, &
+                                                           u_2, v_2, w_2     ! YW
 
 
    REAL ,                                        INTENT(IN   ) ::    rdx, &
@@ -2405,6 +2407,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                    defor11, defor12, div,                  &
                                    nba_mij, n_nba_mij,                     &
                                    rsfs_rmij, n_rsfs_rmij,                 &   ! XS
+                                   u_2, v_2,                               &   ! YW
                                    tke(ims,kms,jms),                       &
                                    msfux, msfuy, xkmh, rdx, rdy, fnm, fnp, &
                                    dnw, zx, zy, rdzw, rho,                 &
@@ -2416,6 +2419,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                    defor12, defor22, div,                  &
                                    nba_mij, n_nba_mij,                     &
                                    rsfs_rmij, n_rsfs_rmij,                 &   ! XS
+                                   u_2, v_2,                               &   ! YW
                                    tke(ims,kms,jms),                       &
                                    msfvx, msfvy, xkmh, rdx, rdy, fnm, fnp, &
                                    dnw, zx, zy, rdzw, rho,                 &
@@ -2427,6 +2431,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                    defor13, defor23, div,                  &
                                    nba_mij, n_nba_mij,                     &
                                    rsfs_rmij, n_rsfs_rmij,                 &   ! XS
+                                   u_2, v_2, w_2,                          &   ! YW
                                    tke(ims,kms,jms),                       &
                                    msftx, msfty, xkmh, rdx, rdy, fnm, fnp, &
                                    dn, zx, zy, rdz, rho,                   &
@@ -2435,6 +2440,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
                                    its, ite, jts, jte, kts, kte           )
 
       CALL rsfs_horizontal_diffusion_s( rt_tendf, config_flags, thp,       &   ! XS
+                                   u_2, v_2,                               &   ! XS
                                    rsfs_rmij(ims,kms,jms,P_rh1),           &
                                    rsfs_rmij(ims,kms,jms,P_rh2),           &
                                    msftx, msfty, msfux, msfuy,             &
@@ -2466,6 +2472,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
           CALL rsfs_horizontal_diffusion_s( moist_tendf(ims,kms,jms,im),       &
                                        config_flags,                      &
                                        moist(ims,kms,jms,im),             &
+                                       u_2, v_2,                          &
                                        rsfs_qmij(ims,kms,jms,(im-PARAM_FIRST_SCALAR)*3+1), &
                                        rsfs_qmij(ims,kms,jms,(im-PARAM_FIRST_SCALAR)*3+2), &
                                        msftx, msfty, msfux, msfuy,        &
@@ -2527,6 +2534,7 @@ SUBROUTINE horizontal_diffusion_2 ( rt_tendf, ru_tendf, rv_tendf, rw_tendf,    &
         CALL rsfs_horizontal_diffusion_s( scalar_tendf(ims,kms,jms,is),     &
                                      config_flags,                     &
                                      scalar(ims,kms,jms,is),           &
+                                     u_2, v_2,                         &
                                      rsfs_qsij(ims,kms,jms,(is-PARAM_FIRST_SCALAR)*3+1),&
                                      rsfs_qsij(ims,kms,jms,(is-PARAM_FIRST_SCALAR)*3+2),&
                                      msftx, msfty, msfux, msfuy,       &
@@ -2551,6 +2559,7 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
                                      defor11, defor12, div,               &
                                      nba_mij, n_nba_mij,                  &
                                      rsfs_rmij, n_rsfs_rmij,              &   ! XS
+                                     u_2, v_2,                            &   ! YW
                                      tke,                                 &
                                      msfux, msfuy,                        &
                                      xkmh, rdx, rdy, fnm, fnp,            &
@@ -2589,7 +2598,8 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
                                                                      tke, &
                                                                     xkmh, &
                                                                       zx, &
-                                                                      zy
+                                                                      zy, &
+                                                                u_2, v_2    ! YW
 
    INTEGER, INTENT(  IN ) :: n_nba_mij, & 
                              n_rsfs_rmij   ! XS
@@ -2629,6 +2639,7 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
 
    REAL :: term1, term2, term3
 
+   REAL :: du, rr, cr, ubar, vbar 
 ! End declarations.
 !-----------------------------------------------------------------------
 
@@ -2681,6 +2692,33 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
                             ids, ide, jds, jde, kds, kde,    &
                             ims, ime, jms, jme, kms, kme,    &
                             its, ite, jts, jte, kts, kte     )
+   ! YW and XS
+   do j = j_start-1, j_end+1
+      do k = kts, ktf 
+         do i = i_start-1, i_end+1  
+            ubar = 0.5 * (u_2(i, k, j) + u_2(i+1, k, j))
+            du = u_2(i+1, k, j) - u_2(i, k, j)
+            if (abs(du) .lt. 1.0e-6) then 
+               if (du .ge. 0.0) then 
+                  du = 1.0e-6
+               else 
+                  du = -1.0e-6
+               end if 
+            end if
+
+            if (ubar .ge. 0) then
+               rr = (u_2(i,k,j) - u_2(i-1,k,j)) / du
+            else 
+               rr = (u_2(i+2,k,j) - u_2(i+1,k,j)) / du
+            end if 
+            
+            cr = max(0.0, min(1.0, rr))
+
+            titau1(i, k, j) = titau1(i, k, j) * cr
+         end do 
+      end do 
+   end do
+
 
 ! titau2 = titau12
    is_ext=0
@@ -2695,6 +2733,34 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
                          ids, ide, jds, jde, kds, kde,    &
                          ims, ime, jms, jme, kms, kme,    &
                          its, ite, jts, jte, kts, kte     )
+
+   ! YW and XS
+   do j = j_start-1, j_end+1
+      do k = kts, ktf 
+          do i = i_start-1, i_end+1  
+            vbar = 0.5 * (v_2(i, k, j) + v_2(i-1, k, j))
+            du = u_2(i, k, j) - u_2(i, k, j-1)
+            if (abs(du) .lt. 1.0e-6) then 
+                if (du .ge. 0.0) then 
+                  du = 1.0e-6
+                else 
+                  du = -1.0e-6
+                end if 
+            end if
+
+            if (vbar .ge. 0) then
+                rr = (u_2(i,k,j-1) - u_2(i,k,j-2)) / du
+            else 
+                rr = (u_2(i,k,j+1) - u_2(i,k,j)) / du
+            end if 
+            
+            cr = max(0.0, min(1.0, rr))
+
+            titau2(i, k, j) = titau2(i, k, j) * cr
+          end do 
+      end do 
+    end do
+
 
 ! titau1avg = titau11avg
 ! titau2avg = titau12avg
@@ -2763,7 +2829,8 @@ END SUBROUTINE horizontal_diffusion_u_2
 SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
                                      defor12, defor22, div,               &
                                      nba_mij, n_nba_mij,                  &
-                                     rsfs_rmij, n_rsfs_rmij,              &   ! XS                                     
+                                     rsfs_rmij, n_rsfs_rmij,              &   ! XS  
+                                     u_2, v_2,                            &   ! YW                                   
                                      tke,                                 &
                                      msfvx, msfvy,                        &
                                      xkmh, rdx, rdy, fnm, fnp,            &
@@ -2800,7 +2867,8 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
                                                                       zx, &
                                                                       zy, &
                                                                     rdzw, &
-                                                                     rho
+                                                                     rho, & 
+                                                                u_2, v_2    ! YW
 
    INTEGER,  INTENT(  IN ) :: n_nba_mij, &
                               n_rsfs_rmij   ! XS
@@ -2821,6 +2889,8 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
    INTEGER :: i_start, i_end, j_start, j_end
    INTEGER :: is_ext,ie_ext,js_ext,je_ext
 
+
+
    REAL , DIMENSION( its-1:ite+1, kts:kte, jts-1:jte+1)    :: titau1avg, &
                                                               titau2avg, &
                                                                  titau1, &
@@ -2836,6 +2906,8 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
    REAL :: mrdx, mrdy, rcoup
    REAL :: tmpdz
    REAL :: tmpzx, tmpzeta_z
+
+   REAL :: dv, rr, cr, ubar, vbar 
 
 ! End declarations.
 !-----------------------------------------------------------------------
@@ -2890,6 +2962,35 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
                          ims, ime, jms, jme, kms, kme,   &
                          its, ite, jts, jte, kts, kte    )
 
+
+   ! YW and XS
+  do j = j_start-1, j_end+1
+    do k = kts, ktf 
+        do i = i_start-1, i_end+1  
+          ubar = 0.5 * (u_2(i, k, j) + u_2(i, k, j-1))
+          dv = v_2(i, k, j) - v_2(i-1, k, j)
+          if (abs(dv) .lt. 1.0e-6) then 
+              if (dv .ge. 0.0) then 
+                dv = 1.0e-6
+              else 
+                dv = -1.0e-6
+              end if 
+          end if
+
+          if (ubar .ge. 0) then
+              rr = (v_2(i-1,k,j) - v_2(i-2,k,j)) / dv
+          else 
+              rr = (v_2(i+1,k,j) - v_2(i,k,j)) / dv
+          end if 
+          
+          cr = max(0.0, min(1.0, rr))
+
+          titau1(i, k, j) = titau1(i, k, j) * cr
+        end do 
+    end do 
+  end do
+
+
 ! titau2 = titau22
    is_ext=0
    ie_ext=0
@@ -2904,6 +3005,33 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
                             ims, ime, jms, jme, kms, kme,   &
                             its, ite, jts, jte, kts, kte    )
 
+
+   ! YW and XS
+   do j = j_start-1, j_end+1
+      do k = kts, ktf 
+         do i = i_start-1, i_end+1  
+            vbar = 0.5 * (v_2(i, k, j) + v_2(i, k, j+1))
+            dv = v_2(i, k, j+1) - v_2(i, k, j)
+            if (abs(dv) .lt. 1.0e-6) then 
+                if (dv .ge. 0.0) then 
+                  dv = 1.0e-6
+                else 
+                  dv = -1.0e-6
+                end if 
+            end if
+            if (vbar .ge. 0) then
+                rr = (v_2(i,k,j) - v_2(i,k,j-1)) / dv
+            else 
+                rr = (v_2(i,k,j+2) - v_2(i,k,j+1)) / dv
+            end if 
+              
+            cr = max(0.0, min(1.0, rr))
+  
+            titau2(i, k, j) = titau2(i, k, j) * cr
+            end do 
+        end do 
+     end do
+                                  
    DO j = j_start, j_end
    DO k = kts+1,ktf
    DO i = i_start, i_end
@@ -2966,7 +3094,8 @@ END SUBROUTINE horizontal_diffusion_v_2
 SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
                                      defor13, defor23, div,               &
                                      nba_mij, n_nba_mij,                  &
-                                     rsfs_rmij, n_rsfs_rmij,              &   ! XS                                     
+                                     rsfs_rmij, n_rsfs_rmij,              &   ! XS   
+                                     u_2, v_2, w_2,                       &   ! YW and XS                                  
                                      tke,                                 &
                                      msftx, msfty,                        &
                                      xkmh, rdx, rdy, fnm, fnp,            &
@@ -3003,7 +3132,8 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
                                                                       zx, &
                                                                       zy, &
                                                                      rdz, &
-                                                                     rho
+                                                                     rho, &
+                                                            u_2, v_2, w_2   ! YW and XS
 
    INTEGER,  INTENT(  IN ) :: n_nba_mij, &
                               n_rsfs_rmij   ! XS
@@ -3039,6 +3169,8 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
    REAL :: mrdx, mrdy, rcoup
 
    REAL :: tmpzx, tmpzy, tmpzeta_z
+
+   real :: ubar, vbar, dw, rr, cr   ! YW 
 
 ! End declarations.
 !-----------------------------------------------------------------------
@@ -3092,6 +3224,36 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
                          ims, ime, jms, jme, kms, kme,    &
                          its, ite, jts, jte, kts, kte     )
 
+
+
+   ! YW and XS
+   do j = j_start-1, j_end+1
+      do k = kts+1, ktf 
+          do i = i_start-1, i_end+1  
+            ubar = 0.5 * (u_2(i, k, j) + u_2(i, k-1, j))
+            dw = w_2(i, k, j) - w_2(i-1, k, j)
+            if (abs(dw) .lt. 1.0e-8) then 
+                if (dw .ge. 0.0) then 
+                  dw = 1.0e-8
+                else 
+                  dw = -1.0e-8
+                end if 
+            end if
+  
+            if (ubar .ge. 0) then
+                rr = (w_2(i-1,k,j) - w_2(i-2,k,j)) / dw
+            else 
+                rr = (w_2(i+1,k,j) - w_2(i,k,j)) / dw 
+            end if 
+            
+            cr = max(0.0, min(1.0, rr))
+  
+            titau1(i, k, j) = titau1(i, k, j) * cr
+          end do 
+      end do 
+    end do
+
+                      
 ! titau2 = titau32
    is_ext=0
    ie_ext=0
@@ -3105,6 +3267,35 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
                          ids, ide, jds, jde, kds, kde,    &
                          ims, ime, jms, jme, kms, kme,    &
                          its, ite, jts, jte, kts, kte     )
+
+
+   ! YW and XS
+   do j = j_start-1, j_end+1
+      do k = kts+1, ktf 
+          do i = i_start-1, i_end+1  
+            vbar = 0.5 * (v_2(i, k, j) + v_2(i, k-1, j))
+            dw = w_2(i, k, j) - w_2(i, k, j-1)
+            if (abs(dw) .lt. 1.0e-8) then 
+                if (dw .ge. 0.0) then 
+                  dw = 1.0e-8
+                else 
+                  dw = -1.0e-8
+                end if 
+            end if
+  
+            if (vbar .ge. 0) then
+                rr = (w_2(i,k,j-1) - w_2(i,k,j-2)) / dw
+            else 
+                rr = (w_2(i,k,j+1) - w_2(i,k,j)) / dw 
+            end if 
+            
+            cr = max(0.0, min(1.0, rr))
+  
+            titau2(i, k, j) = titau2(i, k, j) * cr
+          end do 
+      end do 
+    end do
+
 
 ! titau1avg = titau31avg * zx * zeta_z = titau13avg * zx * zeta_z
 ! titau2avg = titau32avg * zy * zeta_z = titau23avg * zy * zeta_z
@@ -3457,6 +3648,7 @@ END SUBROUTINE horizontal_diffusion_s
 
 
 SUBROUTINE rsfs_horizontal_diffusion_s(tendency, config_flags, var,          &
+                                      u_2, v_2,                              &  ! XS
                                       rsfs_h1, rsfs_h2,                      &  ! XS
                                       msftx, msfty, msfux, msfuy,            &
                                       msfvx, msfvy, xkhh, rdx, rdy,          &
@@ -3500,7 +3692,8 @@ REAL , DIMENSION( ims:ime, kms:kme, jms:jme), INTENT(IN   ) ::         &
                                    xkhh, &
                                     rdz, &
                                    rdzw, &
-                                    rho
+                                    rho, &
+                                u_2, v_2   ! XS
 
 REAL , DIMENSION( ims:ime, kms:kme, jms:jme), INTENT(IN   ) ::    var, &
                                      zx, &
@@ -3531,6 +3724,8 @@ REAL , DIMENSION( its:ite, kts:kte, jts:jte)            ::  tmptendf
 REAL    :: mrdx, mrdy, rcoup
 REAL    :: tmpzx, tmpzy, tmpzeta_z, rdzu, rdzv
 INTEGER :: ktes1,ktes2
+
+real :: ubar, vbar, dvar, rr, cr 
 
 ! End declarations.
 !-----------------------------------------------------------------------
@@ -3653,7 +3848,37 @@ ENDDO
 ENDDO
 ENDDO
 
+! YW and XS
+do j = j_start-1, j_end+1 
+  do k = kts, ktf 
+     do i = i_start-1, i_end+1  
+        ubar = u_2(i, k, j) 
+        dvar = var(i, k, j) - var(i-1, k, j)
+        if (abs(dvar) .lt. 1.0e-8) then 
+           if (dvar .ge. 0.0) then 
+              dvar = 1.0e-8
+           else 
+              dvar = -1.0e-8
+           end if 
+        end if
+
+        if (ubar .ge. 0) then
+           rr = (var(i-1,k,j) - var(i-2,k,j)) / dvar
+        else 
+           rr = (var(i+1,k,j) - var(i,k,j)) / dvar
+        end if 
+        
+        cr = max(0.0, min(1.0, rr))
+
+        H1(i, k, j) = H1(i, k, j) * cr
+     end do 
+  end do 
+end do
+
+
 ENDIF
+
+
 
 ! H2 = partial var over partial y
 
@@ -3719,6 +3944,33 @@ H2(i,k,j) = H2(i,k,j) + rsfs_h2(i,k,j)
 ENDDO
 ENDDO
 ENDDO
+
+! YW and XS
+do j = j_start-1, j_end+1 
+  do k = kts, ktf 
+     do i = i_start-1, i_end+1  
+        vbar = v_2(i, k, j) 
+        dvar = var(i, k, j) - var(i, k, j-1)
+        if (abs(dvar) .lt. 1.0e-8) then 
+           if (dvar .ge. 0.0) then 
+              dvar = 1.0e-8
+           else 
+              dvar = -1.0e-8
+           end if 
+        end if
+
+        if (vbar .ge. 0) then
+           rr = (var(i,k,j-1) - var(i,k,j-2)) / dvar
+        else 
+           rr = (var(i,k,j+1) - var(i,k,j)) / dvar
+        end if 
+        
+        cr = max(0.0, min(1.0, rr))
+
+        H2(i, k, j) = H2(i, k, j) * cr
+     end do 
+  end do 
+end do
 
 ENDIF
 

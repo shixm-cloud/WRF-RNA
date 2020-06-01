@@ -2011,7 +2011,7 @@ SUBROUTINE rsfs_filter( varfilt, var, vars, variable, ifilt, &
   DO j = jts, jte
   DO k = kbgn, kend
   DO i = its, ite
-    ! fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+!     fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
       varfilt(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
   END DO
   END DO
