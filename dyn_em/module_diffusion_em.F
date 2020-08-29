@@ -2715,6 +2715,13 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
             cr = max(0.0, min(1.0, rr))
 
             titau1(i, k, j) = titau1(i, k, j) * cr
+
+            if ((k-kts).lt.6) then
+              titau1(i, k, j) = 0.0
+            else if ((k-kts)>5 .and. (k-kts)<10) then
+              titau1(i, k, j) = titau1(i, k, j) * (real(k)-5.0)/5.0
+            end if
+
          end do 
       end do 
    end do
@@ -2757,6 +2764,13 @@ SUBROUTINE horizontal_diffusion_u_2( tendency, config_flags,              &
             cr = max(0.0, min(1.0, rr))
 
             titau2(i, k, j) = titau2(i, k, j) * cr
+
+            if ((k-kts).lt.6) then
+              titau2(i, k, j) = 0.0
+            else if ((k-kts)>5 .and. (k-kts)<10) then
+              titau2(i, k, j) = titau2(i, k, j) * (real(k)-5.0)/5.0
+            end if
+
           end do 
       end do 
     end do
@@ -2986,6 +3000,13 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
           cr = max(0.0, min(1.0, rr))
 
           titau1(i, k, j) = titau1(i, k, j) * cr
+
+          if ((k-kts).lt.6) then
+            titau1(i, k, j) = 0.0
+          else if ((k-kts)>5 .and. (k-kts)<10) then
+            titau1(i, k, j) = titau1(i, k, j) * (real(k)-5.0)/5.0
+          end if
+
         end do 
     end do 
   end do
@@ -3028,6 +3049,13 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
             cr = max(0.0, min(1.0, rr))
   
             titau2(i, k, j) = titau2(i, k, j) * cr
+
+            if ((k-kts).lt.6) then
+              titau2(i, k, j) = 0.0
+            else if ((k-kts)>5 .and. (k-kts)<10) then
+              titau2(i, k, j) = titau2(i, k, j) * (real(k)-5.0)/5.0
+            end if
+            
             end do 
         end do 
      end do
@@ -3249,6 +3277,13 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
             cr = max(0.0, min(1.0, rr))
   
             titau1(i, k, j) = titau1(i, k, j) * cr
+
+            if ((k-kts).lt.6) then
+              titau1(i, k, j) = 0.0
+            else if ((k-kts)>5 .and. (k-kts)<10) then
+              titau1(i, k, j) = titau1(i, k, j) * (real(k)-5.0)/5.0
+            end if
+
           end do 
       end do 
     end do
@@ -3292,6 +3327,13 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
             cr = max(0.0, min(1.0, rr))
   
             titau2(i, k, j) = titau2(i, k, j) * cr
+
+            if ((k-kts).lt.6) then
+              titau2(i, k, j) = 0.0
+            else if ((k-kts)>5 .and. (k-kts)<10) then
+              titau2(i, k, j) = titau2(i, k, j) * (real(k)-5.0)/5.0
+            end if
+
           end do 
       end do 
     end do
@@ -3871,6 +3913,13 @@ do j = j_start-1, j_end+1
         cr = max(0.0, min(1.0, rr))
 
         H1(i, k, j) = H1(i, k, j) * cr
+
+        if ((k-kts).lt.6) then
+          H1(i, k, j) = 0.0
+        else if ((k-kts)>5 .and. (k-kts)<10) then
+          H1(i, k, j) = H1(i, k, j) * (real(k)-5.0)/5.0
+        end if
+
      end do 
   end do 
 end do
@@ -3968,6 +4017,13 @@ do j = j_start-1, j_end+1
         cr = max(0.0, min(1.0, rr))
 
         H2(i, k, j) = H2(i, k, j) * cr
+
+        if ((k-kts).lt.6) then
+          H2(i, k, j) = 0.0
+        else if ((k-kts)>5 .and. (k-kts)<10) then
+          H2(i, k, j) = H2(i, k, j) * (real(k)-5.0)/5.0
+        end if
+
      end do 
   end do 
 end do
