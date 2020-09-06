@@ -3020,7 +3020,7 @@ SUBROUTINE horizontal_diffusion_v_2( tendency, config_flags,              &
    CALL cal_titau_11_22_33( config_flags, titau2,           &
                             tke, xkmh, defor22,             &
                             nba_mij(ims,kms,jms,P_m22),rho, &
-                            rsfs_rmij(ims,kms,jms,P_m22),   &   ! XS                            
+                            rsfs_rmij(ims,kms,jms,P_rm22),   &   ! XS                            
                             is_ext, ie_ext, js_ext, je_ext, &
                             ids, ide, jds, jde, kds, kde,   &
                             ims, ime, jms, jme, kms, kme,   &
