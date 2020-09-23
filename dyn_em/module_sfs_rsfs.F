@@ -2011,20 +2011,20 @@ SUBROUTINE rsfs_filter( varfilt, var, vars, variable, ifilt, &
   DO j = jts, jte
   DO k = kbgn, kend
   DO i = its, ite
-!     fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
-      varfilt(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+      fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+!      varfilt(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
   END DO
   END DO
   ENDDO
 
-! ! Filter in z-direction
-!   DO j = jts, jte
-!   DO k = kbgn+1, kend-1
-!   DO i = its, ite
-!     varfilt(i,k,j) = a*fxy(i,k+1,j) + b*fxy(i,k,j) + c*fxy(i,k-1,j)
-!   ENDDO
-!   ENDDO
-!   ENDDO
+! Filter in z-direction
+  DO j = jts, jte
+  DO k = kbgn+1, kend-1
+  DO i = its, ite
+    varfilt(i,k,j) = a*fxy(i,k+1,j) + b*fxy(i,k,j) + c*fxy(i,k-1,j)
+  ENDDO
+  ENDDO
+  ENDDO
 
   RETURN
 
