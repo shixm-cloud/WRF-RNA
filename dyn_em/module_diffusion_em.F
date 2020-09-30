@@ -3825,7 +3825,7 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
    CALL cal_titau_13_31( config_flags, titau1, defor13,   &
                          nba_mij(ims,kms,jms,P_m13),      &
                          rsfs_rmij(ims,kms,jms,P_rm13),   &   ! XS
-                         xkmh, fnm, fnp, rho,             &
+                         xkmv, fnm, fnp, rho,             &
                          is_ext, ie_ext, js_ext, je_ext,  &
                          ids, ide, jds, jde, kds, kde,    &
                          ims, ime, jms, jme, kms, kme,    &
@@ -3876,7 +3876,7 @@ SUBROUTINE horizontal_diffusion_w_2( tendency, config_flags,              &
    CALL cal_titau_23_32( config_flags, titau2, defor23,   &
                          nba_mij(ims,kms,jms,P_m23),      &
                          rsfs_rmij(ims,kms,jms,P_rm23),   &   ! XS
-                         xkmh, fnm, fnp, rho,             &
+                         xkmv, fnm, fnp, rho,             &
                          is_ext, ie_ext, js_ext, je_ext,  &
                          ids, ide, jds, jde, kds, kde,    &
                          ims, ime, jms, jme, kms, kme,    &
@@ -5643,7 +5643,7 @@ SUBROUTINE vertical_diffusion_s( tendency, config_flags, var, xkhv,       &
 
 END SUBROUTINE vertical_diffusion_s
 
-=======
+!=======
 ! XS
 
 
