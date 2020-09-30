@@ -17,3 +17,6 @@
 configure.wrf*
 *.backup
 *.f90
+hydro/.DS_Store
+run/.DS_Store
+.DS_Store

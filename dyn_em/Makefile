@@ -22,6 +22,8 @@ MODULES =                 		\
         module_first_rk_step_part2.o    \
         module_avgflx_em.o              \
 	module_sfs_nba.o		\
+        module_sfs_drm.o                \
+        module_sfs_rsfs.o               \
         module_convtrans_prep.o         \
 	module_sfs_driver.o		\
 	module_stoch.o			\

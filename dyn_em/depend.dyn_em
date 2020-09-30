@@ -54,6 +54,8 @@ module_sfs_nba.o: ../frame/module_configure.o
 
 module_sfs_driver.o:  \
 		module_sfs_nba.o \
+		module_sfs_drm.o \
+		module_sfs_rsfs.o \
 		../frame/module_state_description.o \
 		../frame/module_domain.o \
 		../frame/module_configure.o \

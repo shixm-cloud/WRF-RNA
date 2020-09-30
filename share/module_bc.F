@@ -648,6 +648,437 @@ CONTAINS
 
 !-----------------------------------
 
+
+   SUBROUTINE set_physical_bc2d_m( dat, variable_in,  &
+                                 config_flags,           &
+                                 ids,ide, jds,jde,   & ! domain dims
+                                 ims,ime, jms,jme,   & ! memory dims
+                                 ips,ipe, jps,jpe,   & ! patch  dims
+                                 its,ite, jts,jte   )
+
+!  This subroutine sets the data in the boundary region, by direct
+!  assignment if possible, for periodic and symmetric (wall)
+!  boundary conditions.  Currently, we are only doing 1 variable
+!  at a time - lots of overhead, so maybe this routine can be easily
+!  inlined later or we could pass multiple variables -
+!  would probably want a largestep and smallstep version.
+
+!  15 Jan 99, Dave
+!  Modified the incoming its,ite,jts,jte to truly be the tile size.
+!  This required modifying the loop limits when the "istag" or "jstag"
+!  is used, as this is only required at the end of the domain.
+
+!  JDM 08/2015 This subroutine is essentiallyt he same as set_physical_bc2d, except
+!  that the loops around the open b.c. are extended to incoorporate ghost point values
+!  on corner points.
+!
+
+      IMPLICIT NONE
+
+      INTEGER,      INTENT(IN   )    :: ids,ide, jds,jde
+      INTEGER,      INTENT(IN   )    :: ims,ime, jms,jme
+      INTEGER,      INTENT(IN   )    :: ips,ipe, jps,jpe
+      INTEGER,      INTENT(IN   )    :: its,ite, jts,jte
+      CHARACTER,    INTENT(IN   )    :: variable_in
+
+      CHARACTER                      :: variable
+
+      REAL,  DIMENSION( ims:ime , jms:jme ) :: dat
+      TYPE( grid_config_rec_type ) config_flags
+
+      INTEGER  :: i, j, istag, jstag, itime
+
+      LOGICAL  :: debug, open_bc_copy
+
+!------------
+
+      debug = .false.
+
+      open_bc_copy = .false.
+
+      variable = variable_in
+      IF ( variable_in .ge. 'A' .and. variable_in .le. 'Z' ) THEN
+        variable = CHAR( ICHAR(variable_in) - ICHAR('A') + ICHAR('a') )
+      ENDIF
+      IF ((variable == 'u') .or. (variable == 'v') .or.  &
+          (variable == 'w') .or. (variable == 't') .or.  &
+          (variable == 'x') .or. (variable == 'y') .or.  &
+          (variable == 'r') .or. (variable == 'p') ) open_bc_copy = .true.
+
+!  begin, first set a staggering variable
+
+      istag = -1
+      jstag = -1
+
+      IF ((variable == 'u') .or. (variable == 'x')) istag = 0
+      IF ((variable == 'v') .or. (variable == 'y')) jstag = 0
+
+      if(debug) then
+        write(6,*) ' in bc2d, var is ',variable, istag, jstag
+        write(6,*) ' b.cs are ',  &
+      config_flags%periodic_x,  &
+      config_flags%periodic_y
+      end if
+
+
+      IF ( variable == 'd' ) then
+         istag = 0
+         jstag = 0
+      ENDIF
+      IF ( variable == 'e' ) then
+         istag = 0
+      ENDIF
+      IF ( variable == 'f' ) then
+         jstag = 0
+      ENDIF
+
+!  periodic conditions.
+!  note, patch must cover full range in periodic dir, or else
+!  its intra-patch communication that is handled elsewheres.
+!  symmetry conditions can always be handled here, because no
+!  outside patch communication is needed
+
+      periodicity_x:  IF( ( config_flags%periodic_x ) ) THEN
+        IF ( ( ids == ips ) .and.  ( ide == ipe ) ) THEN  ! test if east and west both on-processor
+          IF ( its == ids ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO i = 0,-(bdyzone-1),-1
+              dat(ids+i-1,j) = dat(ide+i-1,j)
+            ENDDO
+            ENDDO
+
+          ENDIF
+
+          IF ( ite == ide ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+!!          DO i = 1 , bdyzone
+            DO i = -istag , bdyzone
+              dat(ide+i+istag,j) = dat(ids+i+istag,j)
+            ENDDO
+            ENDDO
+
+          ENDIF
+        ENDIF
+
+      ELSE
+
+        symmetry_xs: IF( ( config_flags%symmetric_xs ) .and.  &
+                         ( its == ids )                  )  THEN
+
+          IF ( (variable /= 'u') .and. (variable /= 'x') ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO i = 1, bdyzone
+              dat(ids-i,j) = dat(ids+i-1,j) !  here, dat(0) = dat(1), etc
+            ENDDO                             !  symmetry about dat(0.5) (u=0 pt)
+            ENDDO
+
+          ELSE
+
+            IF( variable == 'u' ) THEN
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO i = 0, bdyzone-1
+                dat(ids-i,j) = - dat(ids+i,j) ! here, u(0) = - u(2), etc
+              ENDDO                             !  normal b.c symmetry at u(1)
+              ENDDO
+
+            ELSE
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO i = 0, bdyzone-1
+                dat(ids-i,j) =   dat(ids+i,j) ! here, phi(0) = phi(2), etc
+              ENDDO                             !  normal b.c symmetry at phi(1)
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        ENDIF symmetry_xs
+
+
+!  now the symmetry boundary at xe
+
+        symmetry_xe: IF( ( config_flags%symmetric_xe ) .and.  &
+                         ( ite == ide )                  )  THEN
+
+          IF ( (variable /= 'u') .and. (variable /= 'x') ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO i = 1, bdyzone
+              dat(ide+i-1,j) = dat(ide-i,j)  !  sym. about dat(ide-0.5)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF (variable == 'u' ) THEN
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO i = 0, bdyzone-1
+                dat(ide+i,j) = - dat(ide-i,j)  ! u(ide+1) = - u(ide-1), etc.
+              ENDDO
+              ENDDO
+
+
+            ELSE
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO i = 0, bdyzone-1
+                dat(ide+i,j) = dat(ide-i,j)  !  phi(ide+1) = phi(ide-1), etc.
+              ENDDO
+              ENDDO
+
+            END IF
+
+          END IF
+
+        END IF symmetry_xe
+
+
+!  set open b.c in X copy into boundary zone here.  WCS, 19 March 2000
+
+        open_xs: IF( ( config_flags%open_xs   .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( its == ids ) .and. open_bc_copy  )  THEN
+
+            DO j = jts-1, jte+1  ! KG modified it!!! 01/2011
+              dat(ids-1,j) = dat(ids,j) !  here, dat(0) = dat(1)
+              dat(ids-2,j) = dat(ids,j)
+              dat(ids-3,j) = dat(ids,j)
+            ENDDO
+
+        ENDIF open_xs
+
+
+!  now the open boundary copy at xe
+
+        open_xe: IF( ( config_flags%open_xe   .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                          ( ite == ide ) .and. open_bc_copy  )  THEN
+
+          IF ( variable /= 'u' .and. variable /= 'x') THEN
+
+            DO j = jts-1, jte+1 ! KG modified it!!! 01/2011
+              dat(ide  ,j) = dat(ide-1,j)
+              dat(ide+1,j) = dat(ide-1,j)
+              dat(ide+2,j) = dat(ide-1,j)
+            ENDDO
+
+          ELSE
+
+            DO j = jts-1, jte+1 ! KG modified it!!! 01/2011
+              dat(ide+1,j) = dat(ide,j)
+              dat(ide+2,j) = dat(ide,j)
+              dat(ide+3,j) = dat(ide,j)
+            ENDDO
+
+          END IF
+
+        END IF open_xe
+
+!  end open b.c in X copy into boundary zone addition.  WCS, 19 March 2000
+
+      END IF periodicity_x
+
+!  same procedure in y
+
+      periodicity_y:  IF( ( config_flags%periodic_y ) ) THEN
+        IF ( ( jds == jps ) .and. ( jde == jpe ) )  THEN    ! test of both north and south on processor
+
+          IF( jts == jds ) then
+
+            DO j = 0, -(bdyzone-1), -1
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,jds+j-1) = dat(i,jde+j-1)
+            ENDDO
+            ENDDO
+
+          END IF
+
+          IF( jte == jde ) then
+
+            DO j = -jstag, bdyzone
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,jde+j+jstag) = dat(i,jds+j+jstag)
+            ENDDO
+            ENDDO
+
+          END IF
+
+        END IF
+
+      ELSE
+
+        symmetry_ys: IF( ( config_flags%symmetric_ys ) .and.  &
+                         ( jts == jds)                   )  THEN
+
+          IF ( (variable /= 'v') .and. (variable /= 'y') ) THEN
+
+            DO j = 1, bdyzone
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,jds-j) = dat(i,jds+j-1)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF (variable == 'v') THEN
+
+              DO j = 1, bdyzone
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,jds-j) = - dat(i,jds+j)
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = 1, bdyzone
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,jds-j) = dat(i,jds+j)
+              ENDDO
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        ENDIF symmetry_ys
+
+!  now the symmetry boundary at ye
+
+        symmetry_ye: IF( ( config_flags%symmetric_ye ) .and.  &
+                         ( jte == jde )                  )  THEN
+
+          IF ( (variable /= 'v') .and. (variable /= 'y') ) THEN
+
+            DO j = 1, bdyzone
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,jde+j-1) = dat(i,jde-j)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF (variable == 'v' ) THEN
+
+              DO j = 1, bdyzone
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,jde+j) = - dat(i,jde-j)    ! bugfix: changed jds on rhs to jde , JM 20020410
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = 1, bdyzone
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,jde+j) = dat(i,jde-j)
+              ENDDO
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        END IF symmetry_ye
+
+!  set open b.c in Y copy into boundary zone here.  WCS, 19 March 2000
+
+        open_ys: IF( ( config_flags%open_ys   .or. &
+                       config_flags%polar     .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( jts == jds) .and. open_bc_copy )  THEN
+
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,jds-1) = dat(i,jds)
+              dat(i,jds-2) = dat(i,jds)
+              dat(i,jds-3) = dat(i,jds)
+            ENDDO
+
+        ENDIF open_ys
+
+!  now the open boundary copy at ye
+
+        open_ye: IF( ( config_flags%open_ye   .or. &
+                       config_flags%polar     .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( jte == jde ) .and. open_bc_copy )  THEN
+
+          IF  (variable /= 'v' .and. variable /= 'y' ) THEN
+
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,jde  ) = dat(i,jde-1)
+              dat(i,jde+1) = dat(i,jde-1)
+              dat(i,jde+2) = dat(i,jde-1)
+            ENDDO
+
+          ELSE
+
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,jde+1) = dat(i,jde)
+              dat(i,jde+2) = dat(i,jde)
+              dat(i,jde+3) = dat(i,jde)
+            ENDDO
+
+          ENDIF
+
+        END IF open_ye
+
+!  end open b.c in Y copy into boundary zone addition.  WCS, 19 March 2000
+
+      END IF periodicity_y
+
+!  fix corners for doubly periodic domains
+
+      IF ( config_flags%periodic_x .and. config_flags%periodic_y &
+           .and. (ids == ips) .and. (ide == ipe)                 &
+           .and. (jds == jps) .and. (jde == jpe)                   ) THEN
+
+         IF ( (its == ids) .and. (jts == jds) ) THEN  ! lower left corner fill
+           DO j = 0, -(bdyzone-1), -1
+           DO i = 0, -(bdyzone-1), -1
+             dat(ids+i-1,jds+j-1) = dat(ide+i-1,jde+j-1)
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (ite == ide) .and. (jts == jds) ) THEN  ! lower right corner fill
+           DO j = 0, -(bdyzone-1), -1
+           DO i = 1, bdyzone
+             dat(ide+i+istag,jds+j-1) = dat(ids+i+istag,jde+j-1)
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (ite == ide) .and. (jte == jde) ) THEN  ! upper right corner fill
+           DO j = 1, bdyzone
+           DO i = 1, bdyzone
+             dat(ide+i+istag,jde+j+jstag) = dat(ids+i+istag,jds+j+jstag)
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (its == ids) .and. (jte == jde) ) THEN  ! upper left corner fill
+           DO j = 1, bdyzone
+           DO i = 0, -(bdyzone-1), -1
+             dat(ids+i-1,jde+j+jstag) = dat(ide+i-1,jds+j+jstag)
+           ENDDO
+           ENDDO
+         END IF
+
+       END IF
+
+   END SUBROUTINE set_physical_bc2d_m
+
+!-----------------------------------
+
    SUBROUTINE set_physical_bc3d( dat, variable_in,        &
                                config_flags,                   &
                                ids,ide, jds,jde, kds,kde,  & ! domain dims
@@ -1144,6 +1575,500 @@ CONTAINS
        END IF
 
    END SUBROUTINE set_physical_bc3d
+
+  !---------------------------------
+      SUBROUTINE set_physical_bc3d_m( dat, variable_in,        &
+                               config_flags,                   &
+                               ids,ide, jds,jde, kds,kde,  & ! domain dims
+                               ims,ime, jms,jme, kms,kme,  & ! memory dims
+                               ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
+                               its,ite, jts,jte, kts,kte )
+
+!  This subroutine sets the data in the boundary region, by direct
+!  assignment if possible, for periodic and symmetric (wall)
+!  boundary conditions.  Currently, we are only doing 1 variable
+!  at a time - lots of overhead, so maybe this routine can be easily
+!  inlined later or we could pass multiple variables -
+!  would probably want a largestep and smallstep version.
+
+!  15 Jan 99, Dave
+!  Modified the incoming its,ite,jts,jte to truly be the tile size.
+!  This required modifying the loop limits when the "istag" or "jstag"
+!  is used, as this is only required at the end of the domain.
+
+!  JDM 08/2015 This subroutine is essentiallyt he same as set_physical_bc3d, except
+!  that the loops around the open b.c. are extended to incoorporate ghost point values
+!  on corner points.
+!
+      IMPLICIT NONE
+
+      INTEGER,      INTENT(IN   )    :: ids,ide, jds,jde, kds,kde
+      INTEGER,      INTENT(IN   )    :: ims,ime, jms,jme, kms,kme
+      INTEGER,      INTENT(IN   )    :: ips,ipe, jps,jpe, kps,kpe
+      INTEGER,      INTENT(IN   )    :: its,ite, jts,jte, kts,kte
+      CHARACTER,    INTENT(IN   )    :: variable_in
+
+      CHARACTER                      :: variable
+
+      REAL,  DIMENSION( ims:ime , kms:kme , jms:jme ) :: dat
+      TYPE( grid_config_rec_type ) config_flags
+
+      INTEGER  :: i, j, k, istag, jstag, itime, k_end
+
+      LOGICAL  :: debug, open_bc_copy
+
+!------------
+
+      debug = .false.
+
+      open_bc_copy = .false.
+
+      variable = variable_in
+      IF ( variable_in .ge. 'A' .and. variable_in .le. 'Z' ) THEN
+        variable = CHAR( ICHAR(variable_in) - ICHAR('A') + ICHAR('a') )
+      ENDIF
+
+      IF ((variable == 'u') .or. (variable == 'v') .or.     &
+          (variable == 'w') .or. (variable == 't') .or.     &
+          (variable == 'd') .or. (variable == 'e') .or. &
+          (variable == 'x') .or. (variable == 'y') .or. &
+          (variable == 'f') .or. (variable == 'r') .or. &
+          (variable == 'p')                        ) open_bc_copy = .true.
+
+!  begin, first set a staggering variable
+
+      istag = -1
+      jstag = -1
+      k_end = max(1,kte) !!! KG modified it !!! 01/2011
+
+
+      IF ((variable == 'u') .or. (variable == 'x')) istag = 0
+      IF ((variable == 'v') .or. (variable == 'y')) jstag = 0
+      IF ((variable == 'd') .or. (variable == 'xy')) then
+         istag = 0
+         jstag = 0
+      ENDIF
+      IF ((variable == 'e') ) then
+         istag = 0
+         k_end = min(kde,kte)
+      ENDIF
+
+      IF ((variable == 'f') ) then
+         jstag = 0
+         k_end = min(kde,kte)
+      ENDIF
+
+      IF ( variable == 'w')  k_end = min(kde,kte)
+
+!      k_end = kte
+
+      if(debug) then
+        write(6,*) ' in bc, var is ',variable, istag, jstag, kte, k_end
+        write(6,*) ' b.cs are ',  &
+      config_flags%periodic_x,  &
+      config_flags%periodic_y
+      end if
+
+
+
+!  periodic conditions.
+!  note, patch must cover full range in periodic dir, or else
+!  its intra-patch communication that is handled elsewheres.
+!  symmetry conditions can always be handled here, because no
+!  outside patch communication is needed
+
+      periodicity_x:  IF( ( config_flags%periodic_x ) ) THEN
+
+        IF ( ( ids == ips ) .and. ( ide == ipe ) ) THEN  ! test if both east and west on-processor
+          IF ( its == ids ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO k = kts, k_end
+            DO i = 0,-(bdyzone-1),-1
+              dat(ids+i-1,k,j) = dat(ide+i-1,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          ENDIF
+
+
+          IF ( ite == ide ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO k = kts, k_end
+            DO i = -istag , bdyzone
+              dat(ide+i+istag,k,j) = dat(ids+i+istag,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          ENDIF
+
+        ENDIF
+
+      ELSE
+
+        symmetry_xs: IF( ( config_flags%symmetric_xs ) .and.  &
+                         ( its == ids )                  )  THEN
+
+          IF ( (variable /= 'u') .and. (variable /= 'x') ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO k = kts, k_end
+            DO i = 1, bdyzone
+              dat(ids-i,k,j) = dat(ids+i-1,k,j) !  here, dat(0) = dat(1), etc
+            ENDDO                                 !  symmetry about dat(0.5) (u = 0 pt)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF ( variable == 'u' ) THEN
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO k = kts, k_end
+              DO i = 1, bdyzone
+                dat(ids-i,k,j) = - dat(ids+i,k,j) ! here, u(0) = - u(2), etc
+              ENDDO                                 !  normal b.c symmetry at u(1)
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO k = kts, k_end
+              DO i = 1, bdyzone
+                dat(ids-i,k,j) = dat(ids+i,k,j) ! here, phi(0) = phi(2), etc
+              ENDDO                               !  normal b.c symmetry at phi(1)
+              ENDDO
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        ENDIF symmetry_xs
+
+
+!  now the symmetry boundary at xe
+
+        symmetry_xe: IF( ( config_flags%symmetric_xe ) .and.  &
+                         ( ite == ide )                  )  THEN
+
+          IF ( (variable /= 'u') .and. (variable /= 'x') ) THEN
+
+            DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+            DO k = kts, k_end
+            DO i = 1, bdyzone
+              dat(ide+i-1,k,j) = dat(ide-i,k,j)  !  sym. about dat(ide-0.5)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF (variable == 'u') THEN
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO k = kts, k_end
+              DO i = 1, bdyzone
+                dat(ide+i,k,j) = - dat(ide-i,k,j)  ! u(ide+1) = - u(ide-1), etc.
+              ENDDO
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = MAX(jds,jts-1), MIN(jte+1,jde+jstag)
+              DO k = kts, k_end
+              DO i = 1, bdyzone
+                dat(ide+i,k,j) = dat(ide-i,k,j)  ! phi(ide+1) = - phi(ide-1), etc.
+              ENDDO
+              ENDDO
+              ENDDO
+
+             END IF
+
+          END IF
+
+        END IF symmetry_xe
+
+!  set open b.c in X copy into boundary zone here.  WCS, 19 March 2000
+
+        open_xs: IF( ( config_flags%open_xs   .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( its == ids ) .and. open_bc_copy  )  THEN
+
+            DO j = jts-bdyzone, MIN(jte,jde+jstag)+bdyzone
+            DO k = kts, k_end
+              dat(ids-1,k,j) = dat(ids,k,j) !  here, dat(0) = dat(1), etc
+              dat(ids-2,k,j) = dat(ids,k,j)
+              dat(ids-3,k,j) = dat(ids,k,j)
+            ENDDO
+            ENDDO
+
+        ENDIF open_xs
+
+
+!  now the open_xe boundary copy
+
+        open_xe: IF( ( config_flags%open_xe   .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( ite == ide ) .and. open_bc_copy )  THEN
+
+          IF (variable /= 'u' .and. variable /= 'x' ) THEN
+
+            DO j = jts-bdyzone, MIN(jte,jde+jstag)+bdyzone
+            DO k = kts, k_end
+              dat(ide  ,k,j) = dat(ide-1,k,j)
+              dat(ide+1,k,j) = dat(ide-1,k,j)
+              dat(ide+2,k,j) = dat(ide-1,k,j)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+!!!!!!! I am not sure about this one!  JM 20020402
+            DO j = MAX(jds,jts-1)-bdyzone, MIN(jte+1,jde+jstag)+bdyzone
+            DO k = kts, k_end
+              dat(ide+1,k,j) = dat(ide,k,j)
+              dat(ide+2,k,j) = dat(ide,k,j)
+              dat(ide+3,k,j) = dat(ide,k,j)
+            ENDDO
+            ENDDO
+
+          END IF
+
+        END IF open_xe
+
+!  end open b.c in X copy into boundary zone addition.  WCS, 19 March 2000
+
+      END IF periodicity_x
+
+
+!  same procedure in y
+
+      periodicity_y:  IF( ( config_flags%periodic_y ) ) THEN
+        IF ( ( jds == jps ) .and. ( jde == jpe ) )  THEN      ! test if both north and south on processor
+          IF( jts == jds ) then
+
+            DO j = 0, -(bdyzone-1), -1
+            DO k = kts, k_end
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,k,jds+j-1) = dat(i,k,jde+j-1)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          END IF
+
+          IF( jte == jde ) then
+
+            DO j = -jstag, bdyzone
+            DO k = kts, k_end
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,k,jde+j+jstag) = dat(i,k,jds+j+jstag)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          END IF
+
+        END IF
+
+      ELSE
+
+        symmetry_ys: IF( ( config_flags%symmetric_ys ) .and.  &
+                         ( jts == jds)                   )  THEN
+
+          IF ( (variable /= 'v') .and. (variable /= 'y') ) THEN
+
+            DO j = 1, bdyzone
+            DO k = kts, k_end
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,k,jds-j) = dat(i,k,jds+j-1)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF (variable == 'v') THEN
+
+              DO j = 1, bdyzone
+              DO k = kts, k_end
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,k,jds-j) = - dat(i,k,jds+j)
+              ENDDO
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = 1, bdyzone
+              DO k = kts, k_end
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,k,jds-j) = dat(i,k,jds+j)
+              ENDDO
+              ENDDO
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        ENDIF symmetry_ys
+
+!  now the symmetry boundary at ye
+
+        symmetry_ye: IF( ( config_flags%symmetric_ye ) .and.  &
+                         ( jte == jde )                  )  THEN
+
+          IF ( (variable /= 'v') .and. (variable /= 'y') ) THEN
+
+            DO j = 1, bdyzone
+            DO k = kts, k_end
+            DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+              dat(i,k,jde+j-1) = dat(i,k,jde-j)
+            ENDDO
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            IF ( variable == 'v' ) THEN
+
+              DO j = 1, bdyzone
+              DO k = kts, k_end
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,k,jde+j) = - dat(i,k,jde-j)
+              ENDDO
+              ENDDO
+              ENDDO
+
+            ELSE
+
+              DO j = 1, bdyzone
+              DO k = kts, k_end
+              DO i = MAX(ids,its-1), MIN(ite+1,ide+istag)
+                dat(i,k,jde+j) = dat(i,k,jde-j)
+              ENDDO
+              ENDDO
+              ENDDO
+
+            END IF
+
+          ENDIF
+
+        END IF symmetry_ye
+
+!  set open b.c in Y copy into boundary zone here.  WCS, 19 March 2000
+
+        open_ys: IF( ( config_flags%open_ys   .or. &
+                       config_flags%polar     .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( jts == jds) .and. open_bc_copy )  THEN
+
+            DO k = kts, k_end
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,k,jds-1) = dat(i,k,jds)
+              dat(i,k,jds-2) = dat(i,k,jds)
+              dat(i,k,jds-3) = dat(i,k,jds)
+            ENDDO
+            ENDDO
+
+        ENDIF open_ys
+
+!  now the open boundary copy at ye
+
+        open_ye: IF( ( config_flags%open_ye   .or. &
+                       config_flags%polar     .or. &
+                       config_flags%specified .or. &
+                       config_flags%nested            ) .and.  &
+                         ( jte == jde ) .and. open_bc_copy )  THEN
+
+          IF (variable /= 'v' .and. variable /= 'y' ) THEN
+
+            DO k = kts, k_end
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,k,jde  ) = dat(i,k,jde-1)
+              dat(i,k,jde+1) = dat(i,k,jde-1)
+              dat(i,k,jde+2) = dat(i,k,jde-1)
+            ENDDO
+            ENDDO
+
+          ELSE
+
+            DO k = kts, k_end
+            DO i = its-1, ite+1 ! KG modified it!!! 01/2011
+              dat(i,k,jde+1) = dat(i,k,jde)
+              dat(i,k,jde+2) = dat(i,k,jde)
+              dat(i,k,jde+3) = dat(i,k,jde)
+            ENDDO
+            ENDDO
+
+          ENDIF
+
+      END IF open_ye
+
+!  end open b.c in Y copy into boundary zone addition.  WCS, 19 March 2000
+
+      END IF periodicity_y
+
+!  fix corners for doubly periodic domains
+
+      IF ( config_flags%periodic_x .and. config_flags%periodic_y &
+           .and. (ids == ips) .and. (ide == ipe)                 &
+           .and. (jds == jps) .and. (jde == jpe)                   ) THEN
+
+         IF ( (its == ids) .and. (jts == jds) ) THEN  ! lower left corner fill
+           DO j = 0, -(bdyzone-1), -1
+           DO k = kts, k_end
+           DO i = 0, -(bdyzone-1), -1
+             dat(ids+i-1,k,jds+j-1) = dat(ide+i-1,k,jde+j-1)
+           ENDDO
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (ite == ide) .and. (jts == jds) ) THEN  ! lower right corner fill
+           DO j = 0, -(bdyzone-1), -1
+           DO k = kts, k_end
+           DO i = 1, bdyzone
+             dat(ide+i+istag,k,jds+j-1) = dat(ids+i+istag,k,jde+j-1)
+           ENDDO
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (ite == ide) .and. (jte == jde) ) THEN  ! upper right corner fill
+           DO j = 1, bdyzone
+           DO k = kts, k_end
+           DO i = 1, bdyzone
+             dat(ide+i+istag,k,jde+j+jstag) = dat(ids+i+istag,k,jds+j+jstag)
+           ENDDO
+           ENDDO
+           ENDDO
+         END IF
+
+         IF ( (its == ids) .and. (jte == jde) ) THEN  ! upper left corner fill
+           DO j = 1, bdyzone
+           DO k = kts, k_end
+           DO i = 0, -(bdyzone-1), -1
+             dat(ids+i-1,k,jde+j+jstag) = dat(ide+i-1,k,jds+j+jstag)
+           ENDDO
+           ENDDO
+           ENDDO
+         END IF
+
+       END IF
+
+   END SUBROUTINE set_physical_bc3d_m
+  !---------------------------------
 
    SUBROUTINE init_module_bc
    END SUBROUTINE init_module_bc
