@@ -2002,7 +2002,11 @@ SUBROUTINE rsfs_filter( varfilt, var, vars, variable, ifilt, &
   DO j = jts-1, jte+1
   DO k = kbgn, kend
   DO i = its, ite
-    fx(i,k,j) = a*vart(i+1,k,j) + b*vart(i,k,j) + c*vart(i-1,k,j)
+    ! if (max(abs(vart(i+1,k,j)), abs(vart(i,k,j)), abs(vart(i-1,k,j)))<1.0e-32) then
+    !   fx(i,k,j) = vart(i,k,j)
+    ! else
+      fx(i,k,j) = a*vart(i+1,k,j) + b*vart(i,k,j) + c*vart(i-1,k,j)
+    ! end if
   ENDDO
   ENDDO
   ENDDO
@@ -2011,20 +2015,24 @@ SUBROUTINE rsfs_filter( varfilt, var, vars, variable, ifilt, &
   DO j = jts, jte
   DO k = kbgn, kend
   DO i = its, ite
-      fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
-!      varfilt(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+!     if (max(abs(fx(i,k,j+1)), abs(fx(i,k,j)), abs(fx(i,k,j-1)))<1.0e-32) then
+!       varfilt(i,k,j) = fx(i,k,j)
+! !      fxy(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+!     else
+      varfilt(i,k,j) = a*fx(i,k,j+1) + b*fx(i,k,j) + c*fx(i,k,j-1)
+    ! end if
   END DO
   END DO
   ENDDO
 
-! Filter in z-direction
-  DO j = jts, jte
-  DO k = kbgn+1, kend-1
-  DO i = its, ite
-    varfilt(i,k,j) = a*fxy(i,k+1,j) + b*fxy(i,k,j) + c*fxy(i,k-1,j)
-  ENDDO
-  ENDDO
-  ENDDO
+! ! Filter in z-direction
+!   DO j = jts, jte
+!   DO k = kbgn+1, kend-1
+!   DO i = its, ite
+!     varfilt(i,k,j) = a*fxy(i,k+1,j) + b*fxy(i,k,j) + c*fxy(i,k-1,j)
+!   ENDDO
+!   ENDDO
+!   ENDDO
 
   RETURN
 
